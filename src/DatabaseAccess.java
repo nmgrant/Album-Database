@@ -49,7 +49,6 @@ public class DatabaseAccess { // JDBC driver name and database URL
     public ArrayList<String> listAlbumTitles() {
         stmt = null;
         ArrayList<String> albumTitles = new ArrayList<String>();
-        albumTitles.add("Album Titles");
         try {
             stmt = conn.createStatement();
             String sql;
@@ -113,6 +112,29 @@ public class DatabaseAccess { // JDBC driver name and database URL
         }
         else {
             return null;
+        }
+    }
+    
+    public void insertAlbum(ArrayList<String> albumData) {
+        stmt = null;
+        try {
+            stmt = conn.createStatement();
+            String sql;
+            String title = albumData.get(0);
+            String group = albumData.get(1);
+            String studio = albumData.get(2);
+            String date = albumData.get(3);
+            String length = albumData.get(4);
+            String numberOfSongs = albumData.get(5);
+            
+            sql = "INSERT INTO album" + 
+             "VALUES (" + title + "," + studio  + "," + date + "," + length
+             + "," + numberOfSongs + ")";
+            stmt.executeQuery(sql);
+            
+            stmt.close();
+        } catch (SQLException se) {
+            se.printStackTrace();
         }
     }
 }
