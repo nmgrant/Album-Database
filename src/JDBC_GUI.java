@@ -1,8 +1,12 @@
 
+import com.sun.java.accessibility.util.SwingEventMonitor;
 import java.awt.Point;
+import javax.swing.ListSelectionModel;
 import javax.swing.JOptionPane;
-import java.util.ArrayList;
+import java.util.*;
 import java.awt.event.MouseEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ListSelectionEvent;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -17,6 +21,8 @@ import java.awt.event.MouseEvent;
 public class JDBC_GUI extends javax.swing.JFrame {
     
     private DatabaseAccess accessObject;
+    private String[] albums;
+    private int selectedAlbum = -1;
     /**
      * Creates new form JDBC_GUI
      */
@@ -27,7 +33,7 @@ public class JDBC_GUI extends javax.swing.JFrame {
         } catch (Exception exc) {
             JOptionPane.showMessageDialog(this, "Error: " + exc, "Error", JOptionPane.ERROR_MESSAGE);
         }
-        
+        populateList(accessObject.listAlbumTitles());
     }
 
     /**
@@ -40,14 +46,9 @@ public class JDBC_GUI extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        actionLabel = new javax.swing.JLabel();
-        chooseAction = new java.awt.Choice();
-        albumLabel = new javax.swing.JLabel();
-        chooseAlbum = new java.awt.Choice();
-        resultScrollPane = new javax.swing.JScrollPane();
-        resultList = new javax.swing.JList();
         jScrollPane1 = new javax.swing.JScrollPane();
-        albumDataTable = new javax.swing.JTable() { public String getToolTipText(MouseEvent e) {
+        albumDataTable = new javax.swing.JTable()
+        { public String getToolTipText(MouseEvent e) {
             String tip = null;
             Point p = e.getPoint();
             int rowIndex = rowAtPoint(p);
@@ -62,6 +63,10 @@ public class JDBC_GUI extends javax.swing.JFrame {
             return tip;
         }
     };
+    resultScrollPane = new javax.swing.JScrollPane();
+    resultList = new javax.swing.JList();
+    insertButton = new javax.swing.JButton();
+    removeButton = new javax.swing.JButton();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
     setTitle("JDBC GUI");
@@ -71,30 +76,11 @@ public class JDBC_GUI extends javax.swing.JFrame {
         }
     });
 
-    actionLabel.setText("Choose an action:");
-    actionLabel.setMaximumSize(new java.awt.Dimension(94, 14));
-    actionLabel.setPreferredSize(new java.awt.Dimension(94, 14));
-
-    chooseAction.add("---------------------");
-    chooseAction.add("List all album titles");
-    chooseAction.add("List all data for an album");
-    chooseAction.add("Insert a new album");
-    chooseAction.add("Insert a new studio");
-    chooseAction.add("Remove an album");
-    chooseAction.addItemListener(new java.awt.event.ItemListener() {
-        public void itemStateChanged(java.awt.event.ItemEvent evt) {
-            chooseActionItemStateChanged(evt);
-        }
-    });
-
-    albumLabel.setText("Choose an album:");
-    albumLabel.setMinimumSize(new java.awt.Dimension(88, 14));
-
-    chooseAlbum.addItemListener(new java.awt.event.ItemListener() {
-        public void itemStateChanged(java.awt.event.ItemEvent evt) {
-            chooseAlbumItemStateChanged(evt);
-        }
-    });
+    albumDataTable.setForeground(new java.awt.Color(255, 255, 255));
+    albumDataTable.setModel(new AlbumTableModel(new ArrayList<String>(Arrays.asList("","","","","",""))
+    ));
+    albumDataTable.setSelectionBackground(new java.awt.Color(255, 255, 255));
+    jScrollPane1.setViewportView(albumDataTable);
 
     javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
     jPanel1.setLayout(jPanel1Layout);
@@ -102,39 +88,37 @@ public class JDBC_GUI extends javax.swing.JFrame {
         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
         .addGroup(jPanel1Layout.createSequentialGroup()
             .addContainerGap()
-            .addComponent(actionLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-            .addComponent(chooseAction, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(36, 36, 36)
-            .addComponent(albumLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-            .addComponent(chooseAlbum, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap(34, Short.MAX_VALUE))
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 504, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
     );
     jPanel1Layout.setVerticalGroup(
         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(jPanel1Layout.createSequentialGroup()
-            .addContainerGap()
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                .addComponent(chooseAlbum, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(albumLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(chooseAction, javax.swing.GroupLayout.DEFAULT_SIZE, 23, Short.MAX_VALUE)
-                    .addComponent(actionLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+            .addGap(0, 24, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE))
     );
 
+    resultList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+    resultList.addMouseListener(new java.awt.event.MouseAdapter() {
+        public void mouseClicked(java.awt.event.MouseEvent evt) {
+            resultListMouseClicked(evt);
+        }
+    });
     resultScrollPane.setViewportView(resultList);
 
-    albumDataTable.setModel(new javax.swing.table.DefaultTableModel(
-        new Object [][] {
-            {null, null, null, null, null, null}
-        },
-        new String [] {
-            "Title", "Group", "Studio", "Date", "Length", "Time"
+    insertButton.setText("Insert");
+    insertButton.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            insertButtonActionPerformed(evt);
         }
-    ));
-    jScrollPane1.setViewportView(albumDataTable);
+    });
+
+    removeButton.setText("Remove");
+    removeButton.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            removeButtonActionPerformed(evt);
+        }
+    });
 
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
     getContentPane().setLayout(layout);
@@ -143,20 +127,28 @@ public class JDBC_GUI extends javax.swing.JFrame {
         .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         .addGroup(layout.createSequentialGroup()
             .addContainerGap()
-            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addComponent(resultScrollPane)
-                .addComponent(jScrollPane1))
-            .addContainerGap())
+            .addComponent(resultScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(56, 56, 56)
+            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addComponent(removeButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(insertButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
     );
     layout.setVerticalGroup(
         layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
         .addGroup(layout.createSequentialGroup()
             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(43, 43, 43)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addGap(18, 18, 18)
-            .addComponent(resultScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addComponent(resultScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(15, Short.MAX_VALUE))
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(0, 0, Short.MAX_VALUE)
+                    .addComponent(insertButton)
+                    .addGap(18, 18, 18)
+                    .addComponent(removeButton)
+                    .addGap(71, 71, 71))))
     );
 
     pack();
@@ -166,21 +158,44 @@ public class JDBC_GUI extends javax.swing.JFrame {
         accessObject.closeConnection();// TODO add your handling code here:
     }//GEN-LAST:event_formWindowClosing
 
-    private void chooseActionItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_chooseActionItemStateChanged
-        if (chooseAction.getSelectedItem().equals("List all album titles")) {
-            populateList(accessObject.listAlbumTitles());
-        } else if (chooseAction.getSelectedItem().equals("List all data for an album")) {
-            populateAlbumChoices();
-        }// TODO add your handling code here:
-    }//GEN-LAST:event_chooseActionItemStateChanged
+    private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_removeButtonActionPerformed
 
-    private void chooseAlbumItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_chooseAlbumItemStateChanged
-        populateTable(accessObject.listAlbumData(chooseAlbum.getSelectedItem()));
-    }//GEN-LAST:event_chooseAlbumItemStateChanged
+    private void resultListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_resultListMouseClicked
+        Point mousePosition = evt.getPoint();
+        resultList.setSelectedValue(resultList.getComponentAt(mousePosition), true);
+        
+        if (resultList.isSelectedIndex(selectedAlbum)) {
+            resultList.clearSelection();
+            defaultTable();
+            selectedAlbum = -1;
+        }
+        else {
+            selectedAlbum = resultList.getSelectedIndex();
+            populateTable(accessObject.listAlbumData(albums[selectedAlbum]));
+        }
+    }//GEN-LAST:event_resultListMouseClicked
 
+    private void insertButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertButtonActionPerformed
+        ArrayList<String> albumData = new ArrayList<>();
+        
+        for (int i = 0; i < 6; i++) {
+            albumData.add(albumDataTable.getModel().getValueAt(0, i).toString());
+        }
+        accessObject.insertAlbum(albumData);
+        populateList(accessObject.listAlbumTitles());
+    }//GEN-LAST:event_insertButtonActionPerformed
+    
+//    private void albumSelectionPerformed(ListSelectionEvent evt) { 
+//        selectedAlbum = resultList.getSelectedIndex();
+//        populateTable(accessObject.listAlbumData(albums[selectedAlbum]));
+//    }
+    
     public void populateList(ArrayList<String> list) {
+        albums = list.toArray(new String[list.size()]);
         resultList.setModel(new javax.swing.AbstractListModel() {
-            String[] strings = list.toArray(new String[list.size()]);
+            String[] strings = albums;
             public int getSize() { return strings.length; }
             public Object getElementAt(int i) { return strings[i]; }
         });
@@ -190,19 +205,15 @@ public class JDBC_GUI extends javax.swing.JFrame {
         albumDataTable.setModel(new AlbumTableModel(album));
     }
     
-    public void populateList(String info) {
-        resultList.setModel(new javax.swing.AbstractListModel() {
-            ArrayList<String> albumTitles = accessObject.listAlbumTitles();
-            String[] strings = albumTitles.toArray(new String[albumTitles.size()]);
-            public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
-        });
-    }
-    
-    public void populateAlbumChoices() {
-        ArrayList<String> albumTitles = accessObject.listAlbumTitles();
-        for (String albumTitle : albumTitles)
-            chooseAlbum.add(albumTitle);
+    public void defaultTable() {
+        albumDataTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null}
+            },
+            new String [] {
+                "Title", "Group", "Studio", "Date", "Length", "Time"
+            }
+        ));
     }
     /**
      * @param args the command line arguments
@@ -240,13 +251,11 @@ public class JDBC_GUI extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel actionLabel;
     private javax.swing.JTable albumDataTable;
-    private javax.swing.JLabel albumLabel;
-    private java.awt.Choice chooseAction;
-    private java.awt.Choice chooseAlbum;
+    private javax.swing.JButton insertButton;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton removeButton;
     private javax.swing.JList resultList;
     private javax.swing.JScrollPane resultScrollPane;
     // End of variables declaration//GEN-END:variables
