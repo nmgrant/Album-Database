@@ -115,7 +115,7 @@ public class DatabaseAccess { // JDBC driver name and database URL
         }
     }
     
-    public void insertAlbum(ArrayList<String> albumData) {
+    public String insertAlbum(ArrayList<String> albumData) {
         stmt = null;
         try {
             stmt = conn.createStatement();
@@ -126,16 +126,16 @@ public class DatabaseAccess { // JDBC driver name and database URL
             String date = albumData.get(3);
             String length = albumData.get(4);
             String numberOfSongs = albumData.get(5);
-            
             sql = "INSERT INTO album" + 
-             "VALUES (" + title + "," + studio  + "," + date + "," + length
-             + "," + numberOfSongs + ")";
-            stmt.executeQuery(sql);
+             " VALUES ('" + title + "','" + group + "','" + studio  
+             + "','" + date + "','" + length + "'," + numberOfSongs + ")";
+            stmt.executeUpdate(sql);
             
             stmt.close();
         } catch (SQLException se) {
-            se.printStackTrace();
+            return se.getMessage();
         }
+        return "Insert successful!";
     }
 }
     /*public static void main(String[] args) {
