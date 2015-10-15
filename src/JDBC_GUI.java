@@ -1,12 +1,9 @@
 
-import com.sun.java.accessibility.util.SwingEventMonitor;
 import java.awt.Point;
-import javax.swing.ListSelectionModel;
 import javax.swing.JOptionPane;
 import java.util.*;
 import java.awt.event.MouseEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.ListSelectionEvent;
+import java.sql.SQLException;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -23,6 +20,8 @@ public class JDBC_GUI extends javax.swing.JFrame {
     private DatabaseAccess accessObject;
     private String[] albums;
     private int selectedAlbum = -1;
+    private AlbumTableModel defaultAlbumModel;
+    private StudioTableModel defaultStudioModel;
     /**
      * Creates new form JDBC_GUI
      */
@@ -46,8 +45,11 @@ public class JDBC_GUI extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        albumDataTable = new javax.swing.JTable()
+        dataTables = new javax.swing.JTabbedPane();
+        albumDataScrollPane = new javax.swing.JScrollPane();
+        defaultAlbumModel = new AlbumTableModel(new ArrayList<String>
+            (Arrays.asList("","","","","","")));
+        albumDataTable = new javax.swing.JTable(defaultAlbumModel)
         { public String getToolTipText(MouseEvent e) {
             String tip = null;
             Point p = e.getPoint();
@@ -63,10 +65,29 @@ public class JDBC_GUI extends javax.swing.JFrame {
             return tip;
         }
     };
+    studioDataScrollPane = new javax.swing.JScrollPane();
+    defaultStudioModel = new StudioTableModel(new ArrayList<String>
+        (Arrays.asList("","","","")));
+    studioDataTable = new javax.swing.JTable(defaultStudioModel) { public String getToolTipText(MouseEvent e) {
+        String tip = null;
+        Point p = e.getPoint();
+        int rowIndex = rowAtPoint(p);
+        int colIndex = columnAtPoint(p);
+
+        try {
+            tip = getValueAt(rowIndex, colIndex).toString();
+        } catch (RuntimeException e1) {
+            //catch null pointer exception if mouse is over an empty line
+        }
+
+        return tip;
+    }
+    };
     resultScrollPane = new javax.swing.JScrollPane();
     resultList = new javax.swing.JList();
-    insertButton = new javax.swing.JButton();
+    insertAlbumButton = new javax.swing.JButton();
     removeButton = new javax.swing.JButton();
+    insertStudioButton = new javax.swing.JButton();
 
     setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
     setTitle("JDBC GUI");
@@ -76,11 +97,31 @@ public class JDBC_GUI extends javax.swing.JFrame {
         }
     });
 
-    albumDataTable.setForeground(new java.awt.Color(255, 255, 255));
-    albumDataTable.setModel(new AlbumTableModel(new ArrayList<String>(Arrays.asList("","","","","",""))
-    ));
+    dataTables.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
+    dataTables.setName(""); // NOI18N
+    dataTables.addChangeListener(new javax.swing.event.ChangeListener() {
+        public void stateChanged(javax.swing.event.ChangeEvent evt) {
+            dataTablesStateChanged(evt);
+        }
+    });
+
+    albumDataTable.setModel(defaultAlbumModel
+    );
+    albumDataTable.setColumnSelectionAllowed(false);
+    albumDataTable.setRowSelectionAllowed(false);
     albumDataTable.setSelectionBackground(new java.awt.Color(255, 255, 255));
-    jScrollPane1.setViewportView(albumDataTable);
+    albumDataScrollPane.setViewportView(albumDataTable);
+    albumDataTable.getColumnModel().getSelectionModel().setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
+    dataTables.addTab("Album", albumDataScrollPane);
+
+    studioDataTable.setModel(defaultStudioModel);
+    studioDataTable.setSelectionBackground(new java.awt.Color(255, 255, 255));
+    studioDataTable.setColumnSelectionAllowed(false);
+    studioDataTable.setRowSelectionAllowed(false);
+    studioDataScrollPane.setViewportView(studioDataTable);
+
+    dataTables.addTab("Studio", studioDataScrollPane);
 
     javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
     jPanel1.setLayout(jPanel1Layout);
@@ -88,14 +129,14 @@ public class JDBC_GUI extends javax.swing.JFrame {
         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
         .addGroup(jPanel1Layout.createSequentialGroup()
             .addContainerGap()
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 504, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(dataTables, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
     );
     jPanel1Layout.setVerticalGroup(
         jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-            .addGap(0, 24, Short.MAX_VALUE)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE))
+        .addGroup(jPanel1Layout.createSequentialGroup()
+            .addContainerGap()
+            .addComponent(dataTables, javax.swing.GroupLayout.DEFAULT_SIZE, 73, Short.MAX_VALUE))
     );
 
     resultList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -106,19 +147,29 @@ public class JDBC_GUI extends javax.swing.JFrame {
     });
     resultScrollPane.setViewportView(resultList);
 
-    insertButton.setText("Insert");
-    insertButton.addActionListener(new java.awt.event.ActionListener() {
+    insertAlbumButton.setText("Insert Album");
+    insertAlbumButton.addActionListener(new java.awt.event.ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
-            insertButtonActionPerformed(evt);
+            insertAlbumButtonActionPerformed(evt);
         }
     });
 
-    removeButton.setText("Remove");
+    removeButton.setText("Remove Album");
     removeButton.addActionListener(new java.awt.event.ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
             removeButtonActionPerformed(evt);
         }
     });
+
+    insertStudioButton.setText("Insert Studio");
+    insertStudioButton.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            insertStudioButtonActionPerformed(evt);
+        }
+    });
+    if (isAlbumTab()) {
+        insertStudioButton.setEnabled(false);
+    }
 
     javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
     getContentPane().setLayout(layout);
@@ -131,31 +182,32 @@ public class JDBC_GUI extends javax.swing.JFrame {
             .addGap(56, 56, 56)
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                 .addComponent(removeButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(insertButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(insertAlbumButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(insertStudioButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap(39, Short.MAX_VALUE))
     );
     layout.setVerticalGroup(
         layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
         .addGroup(layout.createSequentialGroup()
             .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(18, 18, 18)
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addComponent(resultScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGroup(layout.createSequentialGroup()
-                    .addComponent(resultScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 152, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(15, Short.MAX_VALUE))
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(insertButton)
+                    .addGap(17, 17, 17)
+                    .addComponent(insertAlbumButton)
                     .addGap(18, 18, 18)
                     .addComponent(removeButton)
-                    .addGap(71, 71, 71))))
+                    .addGap(18, 18, 18)
+                    .addComponent(insertStudioButton)))
+            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
     );
 
     pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        accessObject.closeConnection();// TODO add your handling code here:
+        accessObject.closeConnection();
     }//GEN-LAST:event_formWindowClosing
 
     private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeButtonActionPerformed
@@ -168,7 +220,7 @@ public class JDBC_GUI extends javax.swing.JFrame {
         
         if (resultList.isSelectedIndex(selectedAlbum)) {
             resultList.clearSelection();
-            defaultTable();
+            albumDataTable.setModel(defaultAlbumModel);
             selectedAlbum = -1;
         }
         else {
@@ -177,21 +229,39 @@ public class JDBC_GUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_resultListMouseClicked
 
-    private void insertButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertButtonActionPerformed
+    private void insertAlbumButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertAlbumButtonActionPerformed
         ArrayList<String> albumData = new ArrayList<>();
         
         for (int i = 0; i < 6; i++) {
-            albumData.add(albumDataTable.getModel().getValueAt(0, i).toString());
+            albumData.add(((AlbumTableModel)albumDataTable.getModel()).
+            getValueAt(0, i).toString());
         }
-        accessObject.insertAlbum(albumData);
+        
+        String result = accessObject.insertAlbum(albumData);
+        
+        if (result.equals("Insert successful!"))
+            JOptionPane.showMessageDialog(this, result);
+        else
+            JOptionPane.showMessageDialog(this, result, 
+             "Error", JOptionPane.ERROR_MESSAGE);
         populateList(accessObject.listAlbumTitles());
-    }//GEN-LAST:event_insertButtonActionPerformed
-    
-//    private void albumSelectionPerformed(ListSelectionEvent evt) { 
-//        selectedAlbum = resultList.getSelectedIndex();
-//        populateTable(accessObject.listAlbumData(albums[selectedAlbum]));
-//    }
-    
+    }//GEN-LAST:event_insertAlbumButtonActionPerformed
+
+    private void insertStudioButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_insertStudioButtonActionPerformed
+        
+    }//GEN-LAST:event_insertStudioButtonActionPerformed
+
+    private void dataTablesStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_dataTablesStateChanged
+        if (isAlbumTab()) {
+            insertAlbumButton.setEnabled(true);
+            insertStudioButton.setEnabled(false);
+        }
+        else {
+            insertAlbumButton.setEnabled(false);
+            insertStudioButton.setEnabled(true);
+        }
+    }//GEN-LAST:event_dataTablesStateChanged
+
     public void populateList(ArrayList<String> list) {
         albums = list.toArray(new String[list.size()]);
         resultList.setModel(new javax.swing.AbstractListModel() {
@@ -202,18 +272,14 @@ public class JDBC_GUI extends javax.swing.JFrame {
     }
     
     public void populateTable(ArrayList<String> album ) {
-        albumDataTable.setModel(new AlbumTableModel(album));
+        AlbumTableModel tableModel = new AlbumTableModel(album);
+        tableModel.setCellsEditable(false);
+        albumDataTable.setModel(tableModel);
     }
     
-    public void defaultTable() {
-        albumDataTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null, null, null}
-            },
-            new String [] {
-                "Title", "Group", "Studio", "Date", "Length", "Time"
-            }
-        ));
+    public boolean isAlbumTab() {
+        String currentTab = dataTables.getTitleAt(dataTables.getSelectedIndex());
+        return (currentTab.equals("Album"));
     }
     /**
      * @param args the command line arguments
@@ -251,12 +317,16 @@ public class JDBC_GUI extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JScrollPane albumDataScrollPane;
     private javax.swing.JTable albumDataTable;
-    private javax.swing.JButton insertButton;
+    private javax.swing.JTabbedPane dataTables;
+    private javax.swing.JButton insertAlbumButton;
+    private javax.swing.JButton insertStudioButton;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton removeButton;
     private javax.swing.JList resultList;
     private javax.swing.JScrollPane resultScrollPane;
+    private javax.swing.JScrollPane studioDataScrollPane;
+    private javax.swing.JTable studioDataTable;
     // End of variables declaration//GEN-END:variables
 }
