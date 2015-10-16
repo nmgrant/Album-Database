@@ -65,5 +65,8 @@ public class StudioTableModel extends AbstractTableModel {
     public Object getValueAt(int row, int col) {
         return studio.get(col);
     }
-
+    
+    public ArrayList<String> getStudio() {
+       return studio;
+   }
 }
