@@ -69,6 +69,30 @@ public class DatabaseAccess { // JDBC driver name and database URL
          return null;
       }
    }
+   
+   public ArrayList<String> listStudioTitles() {
+      stmt = null;
+      ArrayList<String> studioTitles = new ArrayList<String>();
+      try {
+         stmt = conn.createStatement();
+         String sql;
+         sql = "SELECT studio_name FROM recording_studio";
+         ResultSet rs = stmt.executeQuery(sql);
+
+         while (rs.next()) {
+            studioTitles.add(rs.getString("studio_name"));
+         }
+         rs.close();
+         stmt.close();
+      } catch (SQLException se) {
+         se.printStackTrace();
+      }
+      if (!studioTitles.isEmpty()) {
+         return studioTitles;
+      } else {
+         return null;
+      }
+   }
 
    public ArrayList<String> listAlbumData(String album) {
       Statement stmt = null;
