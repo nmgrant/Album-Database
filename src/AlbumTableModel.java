@@ -18,10 +18,10 @@ public class AlbumTableModel extends AbstractTableModel {
    };
    private boolean[] editableCells = {true, true, true, true, true, true};
 
-   private ArrayList<String> albums;
+   private ArrayList<String> album;
 
    public AlbumTableModel(ArrayList<String> album) {
-      this.albums = album;
+      this.album = album;
       for (int i = 0; i < 6; i++) {
          setValueAt(album.get(i), 0, i);
       }
@@ -60,15 +60,18 @@ public class AlbumTableModel extends AbstractTableModel {
 
    @Override
    public void setValueAt(Object value, int row, int col) {
-
-      albums.set(col, value.toString());
+      
+      album.set(col, value.toString());
       fireTableCellUpdated(row, col);
 
    }
 
    @Override
    public Object getValueAt(int row, int col) {
-      return albums.get(col);
+      return album.get(col);
    }
-
+   
+   public ArrayList<String> getAlbum() {
+       return album;
+   }
 }
